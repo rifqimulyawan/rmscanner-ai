@@ -53,28 +53,6 @@ jobs:
           name: aab-release
           path: build/app/outputs/bundle/release/app-release.aab
 
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          name: RMScanner AI ${{ github.ref_name }}
-          body: |
-            ## Android Build ${{ github.ref_name }}
-
-            ### Downloads
-            - **APK**: `app-release.apk` (sideload)
-            - **AAB**: `app-release.aab` (Play Store)
-
-            ### Install APK
-            1. Download `app-release.apk`
-            2. Enable "Install from unknown sources" on your phone
-            3. Install the APK
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-          draft: true
-          prerelease: false
-
   build-ios:
     runs-on: macos-latest
     steps:
@@ -158,19 +136,47 @@ jobs:
           name: ipa-release
           path: build/ios/ipa/RMScannerAI.ipa
 
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+  release:
+    needs: [build-android, build-ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk-release
+      - uses: actions/download-artifact@v4
+        with:
+          name: aab-release
+      - uses: actions/download-artifact@v4
+        with:
+          name: ipa-release
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           name: RMScanner AI ${{ github.ref_name }}
           body: |
-            ## iOS Build ${{ github.ref_name }}
+            ## RMScanner AI ${{ github.ref_name }}
 
-            ### Install IPA (sideload)
+            ### Android
+            - **APK**: `app-release.apk` (sideload)
+            - **AAB**: `app-release.aab` (Play Store)
+
+            ### iOS
+            - **IPA**: `RMScannerAI.ipa` (sideload via AltStore/Sideloadly)
+
+            ### Install APK
+            1. Download `app-release.apk`
+            2. Enable "Install from unknown sources" on your phone
+            3. Install the APK
+
+            ### Install IPA
             1. Download `RMScannerAI.ipa`
             2. Use [AltStore](https://altstore.io) or [Sideloadly](https://sideloadly.io) to install
             3. Trust the developer in Settings > General > VPN & Device Management
           files: |
-            build/ios/ipa/RMScannerAI.ipa
+            app-release.apk
+            app-release.aab
+            RMScannerAI.ipa
           draft: true
           prerelease: false
