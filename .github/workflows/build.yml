@@ -139,10 +139,18 @@ jobs:
       - name: Create IPA from build
         run: |
           mkdir -p build/ios/ipa
-          cd build/ios/iphoneos
+          RUNNER_APP=$(find build/ios -name "Runner.app" -type d | head -1)
+          if [ -z "$RUNNER_APP" ]; then
+            echo "Runner.app not found!"
+            find build/ios -type d -maxdepth 3
+            exit 1
+          fi
+          echo "Found Runner.app at: $RUNNER_APP"
+          cd "$(dirname "$RUNNER_APP")"
+          rm -rf Payload
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r ../../ipa/RMScannerAI.ipa Payload
+          zip -r "$GITHUB_WORKSPACE/build/ios/ipa/RMScannerAI.ipa" Payload
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
