@@ -1,0 +1,129 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Build AAB
+        run: flutter build appbundle --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aab-release
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: RMScanner AI ${{ github.ref_name }}
+          body: |
+            ## Android Build ${{ github.ref_name }}
+
+            ### Downloads
+            - **APK**: `app-release.apk` (sideload)
+            - **AAB**: `app-release.aab` (Play Store)
+
+            ### Install APK
+            1. Download `app-release.apk`
+            2. Enable "Install from unknown sources" on your phone
+            3. Install the APK
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          draft: true
+          prerelease: false
+
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+
+      - name: Build IPA (no codesign)
+        run: flutter build ios --release --no-codesign
+
+      - name: Create IPA from build
+        run: |
+          mkdir -p build/ios/ipa
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r ../../ipa/RMScannerAI.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa-release
+          path: build/ios/ipa/RMScannerAI.ipa
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: RMScanner AI ${{ github.ref_name }}
+          body: |
+            ## iOS Build ${{ github.ref_name }}
+
+            ### Install IPA (sideload)
+            1. Download `RMScannerAI.ipa`
+            2. Use [AltStore](https://altstore.io) or [Sideloadly](https://sideloadly.io) to install
+            3. Trust the developer in Settings > General > VPN & Device Management
+          files: |
+            build/ios/ipa/RMScannerAI.ipa
+          draft: true
+          prerelease: false
