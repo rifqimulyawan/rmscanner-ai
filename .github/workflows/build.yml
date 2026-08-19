@@ -116,12 +116,22 @@ jobs:
                 RUBY
                 content = prefix + content
               end
-              content.gsub!(/platform :ios.*/, "platform :ios, \x2715.0\x27")
+              content.gsub!(/platform :ios.*/, "platform :ios, \x2715.5\x27")
+              content.gsub!(/IPHONEOS_DEPLOYMENT_TARGET.*?\x27\d+\.\d+(?:\.\d+)?\x27/, "IPHONEOS_DEPLOYMENT_TARGET = \x2715.5\x27")
+              unless content.include?("EXCLUDED_ARCHS")
+                content.gsub!(/post_install do \|installer\|/) do |match|
+                  match + "\n  installer.pods_project.build_configurations.each do |config|\n    config.build_settings[\"EXCLUDED_ARCHS[sdk=*]\"] = \"armv7\"\n    config.build_settings[\"IPHONEOS_DEPLOYMENT_TARGET\"] = \"15.5\"\n  end\n"
+                end
+              end
               File.write("ios/Podfile", content)
             '
             echo "=== Patched Podfile ==="
             cat ios/Podfile
           fi
+
+      - name: Install pods manually
+        working-directory: ios
+        run: pod install --repo-update
 
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
