@@ -116,7 +116,7 @@ jobs:
                 RUBY
                 content = prefix + content
               end
-              content.gsub!(/platform :ios.*/, "platform :ios, \x2715.5\x27")
+              content.gsub!(/# *platform :ios.*/, "platform :ios, \x2715.5\x27")
               content.gsub!(/IPHONEOS_DEPLOYMENT_TARGET.*?\x27\d+\.\d+(?:\.\d+)?\x27/, "IPHONEOS_DEPLOYMENT_TARGET = \x2715.5\x27")
               unless content.include?("EXCLUDED_ARCHS")
                 content.gsub!(/post_install do \|installer\|/) do |match|

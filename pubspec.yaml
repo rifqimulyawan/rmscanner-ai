@@ -51,6 +51,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  config:
+    enable-swift-package-manager: false
   assets:
     - assets/logo.png
     - assets/app_icon.png
