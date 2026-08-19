@@ -92,11 +92,7 @@ jobs:
       - name: Precache iOS engine
         run: flutter precache --ios
 
-      - name: Install CocoaPods
-        working-directory: ios
-        run: pod install
-
-      - name: Build IPA (no codesign)
+      - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 
       - name: Create IPA from build
