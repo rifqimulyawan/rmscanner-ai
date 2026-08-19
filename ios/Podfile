@@ -1,0 +1,42 @@
+platform :ios, '14.0'
+use_frameworks!
+inhibit_all_warnings!
+
+flutter_path = File.join(File.dirname(__FILE__), 'Flutter')
+
+def flutter_install_ios_plugin_pod_iOS_dependencies(flutter_application_path, ios_project_dir = nil)
+  ios_project_dir ||= File.join(File.dirname(__FILE__), 'Runner')
+  plugin_pods = flutter_parse_plugins(flutter_application_path, 'ios', ios_project_dir)
+  plugin_pods.each do |plugin_hash|
+    plugin_name = plugin_hash['name']
+    plugin_path = plugin_hash['path']
+    plugin_pubspec = plugin_hash['pubspec']
+    plugin_pubspec_path = File.join(plugin_path, 'pubspec.yaml')
+    plugin_version = plugin_pubspec['version']
+    plugin_dependencies = plugin_pubspec['dependencies'] || {}
+    plugin_dependency_names = plugin_dependencies.keys
+
+    if plugin_dependency_names.any? { |name| name == 'flutter' }
+      pod plugin_name, :path => plugin_path
+    else
+      pod plugin_name, :path => plugin_path, :version => plugin_version
+    end
+  end
+end
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    end
+  end
+end
