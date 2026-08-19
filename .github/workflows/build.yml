@@ -92,6 +92,15 @@ jobs:
       - name: Precache iOS engine
         run: flutter precache --ios
 
+      - name: Generate Podfile
+        run: flutter build ios --config-only --no-codesign
+
+      - name: Patch Podfile platform
+        run: |
+          if [ -f ios/Podfile ]; then
+            sed -i '' "s/platform :ios.*/platform :ios, '15.0'/" ios/Podfile
+          fi
+
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
 
