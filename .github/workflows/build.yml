@@ -92,10 +92,7 @@ jobs:
       - name: Precache iOS engine
         run: flutter precache --ios
 
-      - name: Generate Podfile
-        run: flutter build ios --config-only --no-codesign
-
-      - name: Patch Podfile platform
+      - name: Write Podfile
         run: |
           printf '%s\n' \
             "platform :ios, '15.0'" \
