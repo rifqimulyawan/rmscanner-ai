@@ -97,9 +97,28 @@ jobs:
 
       - name: Patch Podfile platform
         run: |
-          if [ -f ios/Podfile ]; then
-            sed -i '' "s/platform :ios.*/platform :ios, '15.0'/" ios/Podfile
-          fi
+          printf '%s\n' \
+            "platform :ios, '15.0'" \
+            "use_frameworks!" \
+            "inhibit_all_warnings!" \
+            "" \
+            "target 'Runner' do" \
+            "  use_frameworks!" \
+            "  use_modular_headers!" \
+            "  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))" \
+            "  target 'RunnerTests' do" \
+            "    inherit! :search_paths" \
+            "  end" \
+            "end" \
+            "" \
+            "post_install do |installer|" \
+            "  installer.pods_project.targets.each do |target|" \
+            "    flutter_additional_ios_build_settings(target)" \
+            "    target.build_configurations.each do |config|" \
+            "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'" \
+            "    end" \
+            "  end" \
+            "end" > ios/Podfile
 
       - name: Build iOS (no codesign)
         run: flutter build ios --release --no-codesign
